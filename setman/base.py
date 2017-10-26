@@ -21,8 +21,18 @@ class SettingsMaster(AbstractSettingsMaster):
 
     def get(self, name: str):
         # FIXME: split into smaller methods
-        denormalized_names = self.list_denormalized_names(name)
+
+        normalized_name = self.normalize_name(name)
+
+        if self._storage.has(normalized_name):
+            return self._storage.get(name)
+
+        denormalized_names = self.list_denormalized_names(normalized_name)
         for provider in self._providers:
             for dn_name in denormalized_names:
-                if provider.has(dn_name):
-                    return provider.get(name)
+                try:
+                    return provider.get(denormalized_names)
+                except KeyError:
+                    pass
+                except Exception as exc:
+                    raise RuntimeError from exc
